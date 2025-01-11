@@ -57,12 +57,21 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const getUser = `-- name: GetUser :many
+const deleteAllUsers = `-- name: DeleteAllUsers :exec
+DELETE FROM users
+`
+
+func (q *Queries) DeleteAllUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllUsers)
+	return err
+}
+
+const getUsers = `-- name: GetUsers :many
 SELECT name FROM users
 `
 
-func (q *Queries) GetUser(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, getUser)
+func (q *Queries) GetUsers(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getUsers)
 	if err != nil {
 		return nil, err
 	}

@@ -100,6 +100,32 @@ func handlerRegister(s *state, cmd command) error{
     return nil;
 }
 
+func handlerReset(s *state, cmd command) error{
+    fmt.Printf("Resetting Database tables");
+    err := s.queries.DeleteAllUsers(context.Background());
+    if err != nil {
+        return err;
+    }
+    
+    return nil;
+}
+
+func handlerUsers(s *state, cmd command) error{
+    users, err := s.queries.GetUsers(context.Background());
+    if err != nil{
+        return err;
+    }
+
+    for _,user := range users {
+        fmt.Printf("%s", user);
+        if (user == s.conf.CurrentUserName){
+            fmt.Printf(" (current)");
+        }
+        fmt.Printf("\n");
+    }
+    return nil;
+}
+
 func startUp(s *state) error{
 
     dbUrl := "postgres://shreyas@localhost:5432/blog_aggregator?sslmode=disable";
@@ -112,11 +138,20 @@ func startUp(s *state) error{
     dbQueries := database.New(db);
     s.queries = dbQueries;
 
+    // add new commands here
     if err := cmds.register("login", handlerLogin); err != nil{
     
         return err;
     }
     if err := cmds.register("register", handlerRegister); err != nil{
+    
+        return err;
+    }
+    if err := cmds.register("reset", handlerReset); err != nil{
+    
+        return err;
+    }
+    if err := cmds.register("users", handlerUsers); err != nil{
     
         return err;
     }
