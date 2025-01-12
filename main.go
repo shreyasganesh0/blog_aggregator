@@ -126,9 +126,22 @@ func handlerUsers(s *state, cmd command) error{
     return nil;
 }
 
+func handlerAggregate(s *state, cmd command) error{
+
+    url := "https://www.wagslane.dev/index.xml"
+    rss_feed, err := fetchFeed(context.Background(), url);
+
+    if err != nil{
+        return err;
+    }
+
+    fmt.Printf("%v", *rss_feed);
+    return nil;
+}
+
 func startUp(s *state) error{
 
-    dbUrl := "postgres://shreyas@localhost:5432/blog_aggregator?sslmode=disable";
+    dbUrl := s.conf.Dburl;
     
     db, err := sql.Open("postgres", dbUrl);
     if err != nil {
@@ -155,19 +168,20 @@ func startUp(s *state) error{
     
         return err;
     }
-
+    if err := cmds.register("agg", handlerAggregate); err != nil{
+    
+        return err;
+    }
     return nil;
     
 }
+
 //main
 func main(){
     var s state;
     var c config.Config;
     var cmd command;
 
-    if err := startUp(&s); err != nil{
-        fmt.Printf("Startup error: %v", err);
-    }
 
     s.conf = &c;
     args_cleaned := os.Args[1:];
@@ -175,17 +189,20 @@ func main(){
     if err := s.conf.Read(); err != nil{ // reads state from conf file and loads it into s.conf
         fmt.Printf("%v", err);
     }
+    if err := startUp(&s); err != nil{
+        fmt.Printf("Startup error: %v", err);
+    }
     
     cmd.name = args_cleaned[0];
-    cmd.args = args_cleaned[1:];
+    if cmd.name != "agg"{
+        cmd.args = args_cleaned[1:];
+    }
     
 
     if err := cmds.run(&s, cmd); err != nil{
         fmt.Printf("%v", err);
         os.Exit(1);
     }
-
-
 
 }
 
