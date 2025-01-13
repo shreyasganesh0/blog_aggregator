@@ -139,6 +139,67 @@ func handlerAggregate(s *state, cmd command) error{
     return nil;
 }
 
+func handlerAddFeed(s *state, cmd command) error{
+    if len(cmd.args) < 2 {
+        fmt.Printf("Not Enough Args\n");
+        os.Exit(1);
+    }
+
+    feed_name := cmd.args[0];
+    feed_url := cmd.args[1];
+    user_name := s.conf.CurrentUserName;
+
+    _, err := s.queries.CheckUser(context.Background(), user_name); // this is a check for safety
+    if err != nil {
+        return fmt.Errorf("User does not exist error while adding feed");
+    }
+
+    user_id, err1 := s.queries.FetchUserId(context.Background(), user_name); //fetch the user id for given user
+    if err1 != nil{
+        return err1;
+    }
+
+    query_args := database.CreateFeedParams{
+        ID: uuid.New(),        
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+        Name: feed_name,
+        Url: feed_url,
+        UserID: user_id, 
+    }
+    _, err2 := s.queries.CreateFeed(context.Background(), query_args);
+
+    if err2 != nil{
+        return err2;
+    }
+
+    fmt.Printf("Feed added to user\n");
+
+    feed_fields, err3 := s.queries.FetchUserFeed(context.Background(), user_id);
+    if err3 != nil{
+        return err3;
+    }
+
+    fmt.Printf("%v", feed_fields);
+
+    return nil;
+}
+
+func handlerFeed(s *state, cmd command) error{
+
+    feed_values, err := s.queries.FetchEntireFeed(context.Background());
+
+    if err != nil{
+        return err;
+    }
+
+    fmt.Printf("%v\n", feed_values);
+    
+    return nil;
+}
+
+
+
 func startUp(s *state) error{
 
     dbUrl := s.conf.Dburl;
@@ -169,6 +230,14 @@ func startUp(s *state) error{
         return err;
     }
     if err := cmds.register("agg", handlerAggregate); err != nil{
+    
+        return err;
+    }
+    if err := cmds.register("addfeed", handlerAddFeed); err != nil{
+    
+        return err;
+    }
+    if err := cmds.register("feeds", handlerFeed); err != nil{
     
         return err;
     }

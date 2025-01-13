@@ -39,7 +39,7 @@ func (c *Config) Read() error{
         return err;
     }
 
-    fmt.Printf("Success %v \n", c);
+    //fmt.Printf("Success %v \n", c);
     return nil;
 }
 

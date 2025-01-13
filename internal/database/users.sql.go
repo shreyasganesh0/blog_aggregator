@@ -22,6 +22,49 @@ func (q *Queries) CheckUser(ctx context.Context, name string) (string, error) {
 	return name, err
 }
 
+const createFeed = `-- name: CreateFeed :one
+INSERT INTO feeds (id, created_at, updated_at, name, url, user_id)
+VALUES(
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6
+)
+RETURNING id, created_at, updated_at, name, url, user_id
+`
+
+type CreateFeedParams struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
+	Url       string
+	UserID    uuid.UUID
+}
+
+func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, createFeed,
+		arg.ID,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.Name,
+		arg.Url,
+		arg.UserID,
+	)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, created_at, updated_at, name)
 VALUES (
@@ -64,6 +107,87 @@ DELETE FROM users
 func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, deleteAllUsers)
 	return err
+}
+
+const fetchEntireFeed = `-- name: FetchEntireFeed :many
+SELECT f.name, f.url, u.name
+FROM feeds as f
+JOIN users as u
+ON u.id = f.user_id
+`
+
+type FetchEntireFeedRow struct {
+	Name   string
+	Url    string
+	Name_2 string
+}
+
+func (q *Queries) FetchEntireFeed(ctx context.Context) ([]FetchEntireFeedRow, error) {
+	rows, err := q.db.QueryContext(ctx, fetchEntireFeed)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FetchEntireFeedRow
+	for rows.Next() {
+		var i FetchEntireFeedRow
+		if err := rows.Scan(&i.Name, &i.Url, &i.Name_2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const fetchUserFeed = `-- name: FetchUserFeed :many
+SELECT id, created_at, updated_at, name, url, user_id FROM feeds WHERE user_id = $1
+`
+
+func (q *Queries) FetchUserFeed(ctx context.Context, userID uuid.UUID) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, fetchUserFeed, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Url,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const fetchUserId = `-- name: FetchUserId :one
+SELECT id FROM users WHERE name = $1
+`
+
+func (q *Queries) FetchUserId(ctx context.Context, name string) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, fetchUserId, name)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getUsers = `-- name: GetUsers :many
