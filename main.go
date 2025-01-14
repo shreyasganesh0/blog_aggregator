@@ -159,21 +159,35 @@ func handlerAddFeed(s *state, cmd command) error{
         return err1;
     }
 
+    feed_id := uuid.New();        
     query_args := database.CreateFeedParams{
-        ID: uuid.New(),        
+        ID: feed_id,        
         CreatedAt: time.Now(),
         UpdatedAt: time.Now(),
         Name: feed_name,
         Url: feed_url,
         UserID: user_id, 
-    }
+    };
     _, err2 := s.queries.CreateFeed(context.Background(), query_args);
 
     if err2 != nil{
         return err2;
     }
-
+    query_args_feed_follows := database.CreateFeedFollowParams{
+        ID: uuid.New(),        
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+        UserID: user_id, 
+        FeedID: feed_id, 
+    }
     fmt.Printf("Feed added to user\n");
+
+    _, err4 := s.queries.CreateFeedFollow(context.Background(), query_args_feed_follows);
+    if err4 != nil{
+        return err4;
+    }
+
+    fmt.Printf("Feed added to feed_follows\n");
 
     feed_fields, err3 := s.queries.FetchUserFeed(context.Background(), user_id);
     if err3 != nil{
@@ -198,7 +212,45 @@ func handlerFeed(s *state, cmd command) error{
     return nil;
 }
 
+func handlerFollowEntry(s *state, cmd command) error{
+    feed_url := cmd.args[0];
 
+    feed_id, err := s.queries.FeedByUrl(context.Background(), feed_url);
+    if err != nil{
+        return err;
+    }
+
+    user_id, err1 := s.queries.FetchUserId(context.Background(), s.conf.CurrentUserName); //fetch the user id for given user
+    if err1 != nil{
+        return err1;
+    }
+    query_args := database.CreateFeedFollowParams{
+        ID: uuid.New(),        
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+        UserID: user_id, 
+        FeedID: feed_id, 
+    };
+
+    ret_v, err2 := s.queries.CreateFeedFollow(context.Background(), query_args);
+    if err2 != nil{
+        return err2;
+    }
+
+    fmt.Printf("username : %s, feedname : %s\n", ret_v[0].Name, ret_v[0].Name_2);
+    return nil;
+}
+
+func handlerFollowing(s *state, cmd command) error{
+
+    feeds, err := s.queries.FeedFollowByUser(context.Background(), s.conf.CurrentUserName);
+    if err != nil{
+        return err;
+    }
+
+    fmt.Printf("username : %s, feeds : \t\n%s\n", s.conf.CurrentUserName, feeds);
+    return nil;
+}
 
 func startUp(s *state) error{
 
@@ -241,6 +293,14 @@ func startUp(s *state) error{
     
         return err;
     }
+    if err := cmds.register("following", handlerFollowing); err != nil{
+    
+        return err;
+    }
+    if err := cmds.register("follow", handlerFollowEntry); err != nil{
+    
+        return err;
+    }
     return nil;
     
 }
@@ -263,7 +323,7 @@ func main(){
     }
     
     cmd.name = args_cleaned[0];
-    if cmd.name != "agg"{
+    if cmd.name != "agg" || cmd.name == "following"{
         cmd.args = args_cleaned[1:];
     }
     
