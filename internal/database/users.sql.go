@@ -13,13 +13,19 @@ import (
 )
 
 const checkUser = `-- name: CheckUser :one
-SELECT name FROM users WHERE name = $1
+SELECT id, name FROM users WHERE name = $1
 `
 
-func (q *Queries) CheckUser(ctx context.Context, name string) (string, error) {
+type CheckUserRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
+func (q *Queries) CheckUser(ctx context.Context, name string) (CheckUserRow, error) {
 	row := q.db.QueryRowContext(ctx, checkUser, name)
-	err := row.Scan(&name)
-	return name, err
+	var i CheckUserRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
 }
 
 const createFeed = `-- name: CreateFeed :one

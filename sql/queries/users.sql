@@ -12,7 +12,7 @@ RETURNING *;
 SELECT name FROM users;
 
 -- name: CheckUser :one
-SELECT name FROM users WHERE name = $1;
+SELECT id, name FROM users WHERE name = $1;
 
 -- name: DeleteAllUsers :exec
 DELETE FROM users;
