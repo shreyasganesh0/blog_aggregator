@@ -195,3 +195,17 @@ func handlerFollowing(s *state, cmd command, user database.CheckUserRow) error{
     return nil;
 }
 
+func handlerDeleteFeedFollow(s *state, cmd command, user database.CheckUserRow) error{
+    query_args := database.DeleteFeedFollowByFUrlUserParams{
+        Name: user.Name,
+        Url: cmd.args[0],
+    }
+
+    err := s.queries.DeleteFeedFollowByFUrlUser(context.Background(), query_args);
+    if err != nil{
+        return err;
+    }
+    fmt.Printf("Unfollowed feed\n");
+    return nil;
+}
+

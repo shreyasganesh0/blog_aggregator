@@ -113,6 +113,10 @@ func startUp(s *state) error{
     
         return err;
     }
+    if err := cmds.register("unfollow", middlewareLogic(handlerDeleteFeedFollow)); err != nil{
+    
+        return err;
+    }
     return nil;
     
 }
