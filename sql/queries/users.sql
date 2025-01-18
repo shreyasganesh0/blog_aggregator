@@ -16,6 +16,7 @@ SELECT id, name FROM users WHERE name = $1;
 
 -- name: DeleteAllUsers :exec
 DELETE FROM users;
+DELETE FROM feeds;
 
 -- name: CreateFeed :one
 INSERT INTO feeds (id, created_at, updated_at, name, url, user_id)
@@ -73,3 +74,14 @@ INNER JOIN feeds ON feeds.id = inserted_feed_follows.feed_id;
 DELETE FROM feed_follows
 WHERE feed_follows.user_id = (SELECT id FROM users WHERE users.name = $1)
 and feed_follows.feed_id = (SELECT id FROM feeds WHERE feeds.url = $2);
+
+-- name: MarkFeedFetched :exec
+UPDATE feeds
+SET last_fetched_at = $1, updated_at = $2
+WHERE url = $3;
+
+-- name: GetNextFeedToFetch :one
+SELECT url FROM feeds
+ORDER BY last_fetched_at ASC NULLS FIRST
+LIMIT 1; 
+

@@ -139,7 +139,7 @@ func main(){
     }
     
     cmd.name = args_cleaned[0];
-    if cmd.name != "agg" || cmd.name == "following"{
+    if cmd.name != "following"{
         cmd.args = args_cleaned[1:];
     }
     

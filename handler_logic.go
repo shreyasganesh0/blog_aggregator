@@ -86,15 +86,24 @@ func handlerUsers(s *state, cmd command) error{
 
 func handlerAggregate(s *state, cmd command) error{
 
-    url := "https://www.wagslane.dev/index.xml"
-    rss_feed, err := fetchFeed(context.Background(), url);
+    if cmd.args[0] == ""{ 
+        return fmt.Errorf("No argument found for agg\n");
+    } 
+    tick_time, err1 := time.ParseDuration(cmd.args[0]);
+    if err1 != nil{
+        return err1;
+    }
+    ticker := time.NewTicker(tick_time);
 
-    if err != nil{
-        return err;
+    for;;<-ticker.C {
+        fmt.Printf("ticking\n");
+        err := scrapeFeeds(s);
+        if err != nil{
+            return err;
+        }
     }
 
-    fmt.Printf("%v", *rss_feed);
-    return nil;
+    return fmt.Errorf("Something went wrong and the loop didnt happen\n");
 }
 
 func handlerAddFeed(s *state, cmd command, user database.CheckUserRow) error{
