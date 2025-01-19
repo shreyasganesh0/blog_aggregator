@@ -33,6 +33,9 @@ RETURNING *;
 -- name: FetchUserId :one
 SELECT id FROM users WHERE name = $1;
 
+-- name: FetchFeedId :one
+SELECT id FROM feeds where url = $1;
+
 -- name: FetchUserFeed :many
 SELECT * FROM feeds WHERE user_id = $1;
 
@@ -84,4 +87,29 @@ WHERE url = $3;
 SELECT url FROM feeds
 ORDER BY last_fetched_at ASC NULLS FIRST
 LIMIT 1; 
+
+-- name: CreatePost :one
+INSERT INTO posts (id, created_at, updated_at, title, url, description, published_at, feed_id)
+VALUES(
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+ON CONFLICT (url) DO NOTHING
+RETURNING *;
+
+-- name: GetPostsByUser :many
+SELECT posts.* FROM posts
+INNER JOIN feed_follows
+ON posts.feed_id = feed_follows.feed_id
+INNER JOIN users
+ON users.id = feed_follows.user_id
+WHERE users.name = $1
+ORDER BY published_at ASC
+LIMIT $2;
 

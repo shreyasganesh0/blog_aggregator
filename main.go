@@ -117,6 +117,10 @@ func startUp(s *state) error{
     
         return err;
     }
+    if err := cmds.register("browse", middlewareLogic(handlerBrowse)); err != nil{
+    
+        return err;
+    }
     return nil;
     
 }

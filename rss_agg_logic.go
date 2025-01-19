@@ -8,6 +8,7 @@ import(
     "fmt"
     "time"
     "database/sql"
+    "github.com/google/uuid"
     "github.com/shreyasganesh0/blog_aggregator/database" 
 
 )
@@ -24,7 +25,7 @@ type RSSFeed struct{
 type RSSItem struct{
     Title string `xml:"title"`
     Link string `xml:"link"`
-    Description string `xml:"description"`
+    Description sql.NullString `xml:"description"`
     PubDate string `xml:"pubDate"`
 }
 
@@ -86,8 +87,33 @@ func scrapeFeeds(s *state)  error{
         return err2;
     }
     
+    feed_id, err3 := s.queries.FetchFeedId(ctx, url);
+    if err3 != nil{
+        return err3;
+    }
+    
     for _, rss_item := range rss_feed_p.Channel.Items {
-        fmt.Printf("%v\n", rss_item.Title);
+        layout := time.RFC1123Z; 
+        pub_date, timerr := time.Parse(layout, rss_item.PubDate);
+        if timerr != nil{
+            fmt.Printf("time error : %v", timerr);
+            continue;
+        }
+       post_args := database.CreatePostParams{
+            ID: uuid.New(),        
+            CreatedAt: time.Now(),
+            UpdatedAt: time.Now(),
+            Title: rss_item.Title,
+            Url: rss_item.Link,
+            Description: sql.NullString(rss_item.Description), 
+            PublishedAt: pub_date,
+            FeedID: feed_id, 
+        };
+
+        _, err := s.queries.CreatePost(ctx, post_args);
+        if err != nil{
+            return err;
+        }
     }
     return nil;
 }

@@ -5,6 +5,7 @@ import(
     "os"
     "time"
     "context"
+    "strconv"
     "database/sql"
     "github.com/google/uuid"
     _ "github.com/lib/pq"
@@ -216,5 +217,23 @@ func handlerDeleteFeedFollow(s *state, cmd command, user database.CheckUserRow) 
     }
     fmt.Printf("Unfollowed feed\n");
     return nil;
+}
+func handlerBrowse(s *state, cmd command, user database.CheckUserRow) error{
+    limit, err1 := strconv.Atoi(cmd.args[0]);
+    if err1 != nil || limit < 2{
+        limit = 2;
+    }
+    query_args := database.GetPostsByUserParams{
+        Name: user.Name,
+        Limit: int32(limit),
+    }
+
+    posts, err := s.queries.GetPostsByUser(context.Background(), query_args);
+    if err != nil {
+        return err;
+    }
+
+    fmt.Printf("%v\n", posts);
+    return nil
 }
 
